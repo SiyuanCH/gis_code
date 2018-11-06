@@ -1,0 +1,94 @@
+---
+title: "AssessmentPart1"
+author: "Siyuan.Chen"
+date: "6 November 2018"
+output: html_document
+---
+```{r}
+getwd()
+setwd("N:")
+install.packages("tidyverse")
+library(tidyverse)
+#wang the data in straight from the web using read_csv, skipping over the 'n/a' entries as you go...
+LondonData <- read_csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv", na = "n/a")
+class(LondonData)
+datatypelist <- data.frame(cbind(lapply(LondonData,class)))
+LondonData <- read_csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv")
+summary(df)
+names(LondonData)
+LondonBoroughs<-LondonData[626:658,]
+LondonData <- data.frame(LondonData)
+LondonBoroughs <- LondonData[grep("^E09",LondonData[,3]),]
+head(LondonBoroughs)
+LondonBoroughs <- LondonBoroughs[-4]
+LondonBoroughs<-LondonBoroughs[,c(1,19,20,21)]
+names(LondonBoroughs)[1] <- c("Borough Name")
+install.packages("maptools")
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(OpenStreetMap)
+library(sp)
+library(rgeos)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(rgdal)
+#pull out london using grep and the regex wildcard for'start of the string' (^) to to look for the bit of the district code that relates to London (E09) from the 'lad15cd' column in the data slot of our spatial polygons dataframe
+LondonMap <- EW[grep("^E09",EW@data$lad15cd),]
+#plot it using the base plot function
+qtm(LondonMap)
+#read the shapefile into a simple features object
+BoroughMapSF <- read_shape("N:/GIS/england_lad_2011.shp", as.sf = TRUE)
+BoroughMapSP <- LondonMap
+#plot it very quickly usking qtm (quick thematic map) to check it has been read in correctly
+qtm(BoroughMapSF)
+qtm(BoroughMapSP)
+library(methods)
+#check the class of BoroughMapSF
+class(BoroughMapSF)
+class(BoroughMapSP)
+#now convert the SP object into an SF object...
+newSF <- st_as_sf(BoroughMapSP)
+#and try the other way around SF to SP...
+newSP <- as(newSF, "Spatial")
+#simples!
+BoroughMapSP <- as(BoroughMapSF, "Spatial")
+BoroughMapSP@data <- data.frame(BoroughMapSP@data,LondonData[match(BoroughMapSP@data[,"code"],LondonData[,"New.code"]),])
+BoroughDataMap <- append_data(BoroughMapSF,LondonData, key.shp = "code", key.data = "New.code", ignore.duplicates = TRUE)
+BoroughDataMap2 <- BoroughMapSF %>% left_join(LondonData, by = c("code" = "New.code"))
+#You might need to install the shinyjs paclage for this to work
+install.packages("shinyjs")
+library(shinyjs)
+#it's possible to explicitly tell R which package to get the function from with the :: operator...
+tmap_mode("view")
+tm_shape(BoroughDataMap) +tm_polygons("Cars.per.household...2011",style="jenks",palette="PuRd",midpoint=NA,title="Cars per household in London Boroughs,2011")
+
+
+
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
